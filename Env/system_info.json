@@ -1,0 +1,59 @@
+{
+  "mec_system": {
+    "map_width": 800,
+    "map_height": 600,
+    "screen_width": 800,
+    "screen_height": 600,
+    "tau": 0.01,
+    "max_run_time": 100,
+    "device_num_list": [3, 15]
+  },
+  "device_info_list": [
+    {
+      "type": 0,
+      "name": "RSU",
+      "mec_function": "True",
+      "max_task_generation_num": 0,
+      "max_task_load_num": 5,
+      "max_task_run_time": 50,
+      "max_task_upload_data": 0,
+      "max_task_store_data": 0,
+      "max_task_compute_data": 0,
+      "max_task_download_data": 0,
+      "max_transmission_power": 30,
+      "max_compute_power": 1,
+      "max_standby_power": 1,
+      "max_upload_resources": 10000000.0,
+      "max_store_resources": 0,
+      "max_compute_resources": 10000000000.0,
+      "max_download_resources": 5000000.0,
+      "max_velocity": 0,
+      "max_coverage": 1500,
+      "max_connect_num_list": [0, 15],
+      "max_received_power_list": [0, 0]
+    },
+    {
+      "type": 1,
+      "name": "Vehicle",
+      "mec_function": "False",
+      "max_task_generation_num": 1,
+      "max_task_load_num": 0,
+      "max_task_run_time": 50,
+      "max_task_upload_data": 3000000.0,
+      "max_task_store_data": 0,
+      "max_task_compute_data": 200000000.0,
+      "max_task_download_data": 1500000.0,
+      "max_transmission_power": 27,
+      "max_compute_power": 1,
+      "max_standby_power": 20,
+      "max_upload_resources": 0,
+      "max_store_resources": 0,
+      "max_compute_resources": 0,
+      "max_download_resources": 0,
+      "max_velocity": 0,
+      "max_coverage": 1500,
+      "max_connect_num_list": [3, 0],
+      "max_received_power_list": [0, 0]
+    }
+  ]
+}
