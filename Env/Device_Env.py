@@ -68,6 +68,9 @@ class Base_Device():
         self.task_finish_num = 0
         self.task_fail_num = 0
 
+        # 定义资源分配状态空间
+        self.ra_state_space = (self.max_task_load_num, 6)
+
     # 重置设备
     def reset(self):
         # 重置连接设备列表

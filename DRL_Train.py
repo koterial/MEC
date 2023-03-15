@@ -1,9 +1,10 @@
 import os
+import json
 import random
-import Env.MEC_Env
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras as keras
+from Env.MEC_Env import MEC
 from Agent.DDPG.DDPG import DDPG_Agent
 from Agent.DDPG.TD3 import TD3_Agent
 from Agent.DDPG.MA_TD3 import MA_TD3_Agent
@@ -43,7 +44,9 @@ class Train():
             self.summary_writer = tf.summary.create_file_writer(self.log_dir)
 
         # 创建环境
-        self.env = mec_env.mec()
+        with open("Env/system_info.json", "r") as f:
+            system_info = json.load(f)
+        self.env = MEC(**system_info)
 
         # 设置训练次数以及最大步长
         self.episode_num = 1000000
@@ -81,10 +84,13 @@ class Train():
         self.add_noise = False
 
         # 创建智能体
-        self.agent = self.agents_create()
-        if self.load_path is not None:
-            print("读取历史状态")
-            self.agent.model_load(self.load_path)
+        self.agent_list = []
+        for each in range(self.env.system_device_num_list[0]):
+            self.agent = self.agents_create()
+            if self.load_path is not None:
+                print("读取历史状态")
+                self.agent.model_load(self.load_path)
+            self.agent_list.append(self.agent)
 
     def train(self):
         sum_step = 0
@@ -100,7 +106,7 @@ class Train():
                     action = self.agent.action(np.array([state]))[0]
                 if self.add_noise:
                     action = self.noise(action)
-                next_state, reward, done, _ = self.env.step(action)
+                _, _, next_ra_state_list, ra_reward_list, done = self.env.system_step(None, ra_action_list)
                 step += 1
                 sum_step += 1
                 rewards += reward
@@ -133,10 +139,10 @@ class Train():
             if each % self.save_rate == 0 and self.save_path != None:
                 self.agent.model_save(self.save_path)
 
-    def agents_create(self):
+    def agents_create(self, index):
         if self.model == "DDPG":
             agent = DDPG_Agent(state_shape=self.env.observation_space, action_shape=self.env.action_space,
-                               agent_index=1, batch_size=self.batch_size, buffer_size=self.buffer_size,
+                               agent_index=index, batch_size=self.batch_size, buffer_size=self.buffer_size,
                                critic_lr=self.critic_lr,
                                actor_lr=self.actor_lr,
                                critic_units_num=self.critic_units_num, critic_layers_num=self.critic_layers_num,
@@ -145,7 +151,7 @@ class Train():
                                )
         elif self.model == "TD3":
             agent = TD3_Agent(state_shape=self.env.observation_space, action_shape=self.env.action_space,
-                               agent_index=1, batch_size=self.batch_size, buffer_size=self.buffer_size,
+                               agent_index=index, batch_size=self.batch_size, buffer_size=self.buffer_size,
                                critic_lr=self.critic_lr,
                                actor_lr=self.actor_lr,
                                critic_units_num=self.critic_units_num, critic_layers_num=self.critic_layers_num,
@@ -156,7 +162,7 @@ class Train():
             agent = MA_TD3_Agent(state_shape=self.env.observation_space,
                                  action_n_shape=[self.env.egs_max_task_load + 1, self.env.egs_max_task_load + 1,
                                                  self.env.egs_max_task_load + 1],
-                                 agent_index=1, batch_size=self.batch_size, buffer_size=self.buffer_size,
+                                 agent_index=index, batch_size=self.batch_size, buffer_size=self.buffer_size,
                                  critic_lr=self.critic_lr,
                                  actor_lr=self.actor_lr,
                                  critic_units_num=self.critic_units_num, critic_layers_num=self.critic_layers_num,

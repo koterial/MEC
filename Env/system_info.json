@@ -14,7 +14,7 @@
       "name": "RSU",
       "mec_function": "True",
       "max_task_generation_num": 0,
-      "max_task_load_num": 5,
+      "max_task_load_num": 15,
       "max_task_run_time": 50,
       "max_task_upload_data": 0,
       "max_task_store_data": 0,
