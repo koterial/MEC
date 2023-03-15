@@ -53,10 +53,10 @@ class Train():
 
         # 训练次数以及最大步长
         self.episode_num = 100000
-        self.episode_len = 1
+        self.episode_len = 10
 
         # batch和buffer大小
-        self.batch_size = 51
+        self.batch_size = 512
         self.buffer_size = 100000
 
         # 网络模型结构

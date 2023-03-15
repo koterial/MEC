@@ -44,7 +44,10 @@ class Base_Task():
         if self.compute_data == 0:
             self.compute_finish(now_time)
             self.download_finish(now_time)
-            return 1, waste_compute_data / compute_data
+            if compute_data == 0:
+                return 1, 0
+            else:
+                return 1, waste_compute_data / compute_data
         return 0, waste_compute_data / compute_data
 
     # 任务远程执行, 需要上传、计算、下载三阶段
@@ -58,23 +61,35 @@ class Base_Task():
             self.upload_data = max(self.upload_data - upload_data, 0)
             if self.upload_data == 0:
                 self.upload_finish(now_time)
-            return 0, waste_upload_data / upload_data
+            if upload_data == 0:
+                return 0, 0
+            else:
+                return 0, waste_upload_data / upload_data
         # 计算阶段
         elif self.compute_data != 0:
             waste_compute_data = max(compute_data - self.compute_data, 0)
             self.compute_data = max(self.compute_data - compute_data, 0)
             if self.compute_data == 0:
                 self.compute_finish(now_time)
-            return 0, waste_compute_data / compute_data
+            if compute_data == 0:
+                return 0, 0
+            else:
+                return 0, waste_compute_data / compute_data
         # 下载阶段
         elif self.download_data != 0:
             waste_download_data = max(download_data - self.download_data, 0)
             self.download_data = max(self.download_data - download_data, 0)
             if self.download_data == 0:
                 self.download_finish(now_time)
-                return 1, waste_download_data / download_data
+                if download_data == 0:
+                    return 1, 0
+                else:
+                    return 1, waste_download_data / download_data
             else:
-                return 0, waste_download_data / download_data
+                if download_data == 0:
+                    return 0, 0
+                else:
+                    return 0, waste_download_data / download_data
 
     # 任务卸载完成
     # 输入: 当前时间(时隙开头), 运行设备, 虚拟机编号
