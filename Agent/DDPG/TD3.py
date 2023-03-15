@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
-from Replay_Buffer.Replay_Buffer import Replay_Buffer, Prioritized_Replay_Buffer
-from DDPG.DDPG import DDPG_Agent, DDPG_Critic, DDPG_Actor
+from Agent.Replay_Buffer.Replay_Buffer import Replay_Buffer, Prioritized_Replay_Buffer
+from Agent.DDPG.DDPG import DDPG_Agent, DDPG_Critic, DDPG_Actor
 
 tf.keras.backend.set_floatx('float32')
 

@@ -3,8 +3,8 @@ import pickle
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras as keras
-from Utils.Common import clip_by_local_norm
-from Replay_Buffer.Replay_Buffer import Replay_Buffer, Prioritized_Replay_Buffer
+from Agent.Utils.Common import clip_by_local_norm
+from Agent.Replay_Buffer.Replay_Buffer import Replay_Buffer, Prioritized_Replay_Buffer
 
 tf.keras.backend.set_floatx('float32')
 

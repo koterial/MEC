@@ -6,7 +6,7 @@
     "screen_height": 600,
     "tau": 0.01,
     "max_run_time": 100,
-    "device_num_list": [3, 15]
+    "device_num_list": [1, 5]
   },
   "device_info_list": [
     {
@@ -14,7 +14,7 @@
       "name": "RSU",
       "mec_function": "True",
       "max_task_generation_num": 0,
-      "max_task_load_num": 15,
+      "max_task_load_num": 5,
       "max_task_run_time": 50,
       "max_task_upload_data": 0,
       "max_task_store_data": 0,
@@ -29,7 +29,7 @@
       "max_download_resources": 5000000.0,
       "max_velocity": 0,
       "max_coverage": 1500,
-      "max_connect_num_list": [0, 15],
+      "max_connect_num_list": [0, 5],
       "max_received_power_list": [0, 0]
     },
     {
@@ -52,7 +52,7 @@
       "max_download_resources": 0,
       "max_velocity": 0,
       "max_coverage": 1500,
-      "max_connect_num_list": [3, 0],
+      "max_connect_num_list": [1, 0],
       "max_received_power_list": [0, 0]
     }
   ]

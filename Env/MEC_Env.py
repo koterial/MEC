@@ -48,6 +48,9 @@ class MEC():
         # 定义系统设备列表
         for _ in self.system_device_info_list:
             self.system_device_list.append({})
+        # 定义任务完成/失败数量
+        self.finish_num = 0
+        self.fail_num = 0
 
         # 初始化设备
         for device_info, device_num in zip(self.system_device_info_list, self.system_device_num_list):
@@ -98,14 +101,12 @@ class MEC():
                         device.task_wait_list.append(task)
                 self.system_device_list[device_info["type"]][each1] = device
 
-        # 将所有设备连接到1, 2, 3号基站
+        # 将所有设备连接到1号基站
         for device_list in self.system_device_list[1:]:
             for device in device_list.values():
                 device.connect(self.system_device_list[0][1])
-                device.connect(self.system_device_list[0][2])
-                device.connect(self.system_device_list[0][3])
                 for task in device.task_wait_list:
-                    device.task_offload(self.now_time, task, self.system_device_list[0][random.choice([1, 2, 3])])
+                    device.task_offload(self.now_time, task, self.system_device_list[0][1])
         return self.get_co_state(), self.get_ra_state()
 
     # 系统运行
@@ -117,7 +118,7 @@ class MEC():
         # 下一时隙
         self.now_time += 1
         # time.sleep(0.1)
-        done = self.now_time == self.end_time + 1
+        done = self.now_time == self.end_time + 1 or self.finish_num + self.fail_num == 5
         co_state_list = self.get_co_state()
         ra_state_list = self.get_ra_state()
         return co_state_list, None, ra_state_list, ra_reward_list, done
@@ -153,9 +154,11 @@ class MEC():
                 if run_state == 1:
                     reward += 10
                     device.task_finish_num += 1
+                    self.finish_num += 1
                 elif run_state == -1:
                     reward -= 10
                     device.task_fail_num += 1
+                    self.fail_num += 1
                 reward_list[device.index - 1] = reward
         return reward_list
 
@@ -213,17 +216,17 @@ if __name__ == "__main__":
     mec = MEC(**system_info)
     reward_list = []
     for each in range(1000):
-        state = mec.reset()
+        _, ra_state_list = mec.reset()
         total_ra_reward_list = np.zeros((mec.system_device_num_list[0],)).tolist()
         while True:
-            ra_action_list = [np.random.uniform(size=(3*15, )) for _, device in mec.system_device_list[0].items()]
+            ra_action_list = [np.random.uniform(size=(15, )) for _, device in mec.system_device_list[0].items()]
             for action in ra_action_list:
                 action = np.reshape(action, (3, -1))
                 action[0] = tf.nn.softmax(action[0]).numpy()
                 action[1] = tf.nn.softmax(action[1]).numpy()
                 action[2] = tf.nn.softmax(action[2]).numpy()
-                action = np.reshape(action, (3*15,))
-            _, _, ra_state_list, ra_reward_list, done = mec.system_step(None, ra_action_list)
+                action = np.reshape(action, (15,))
+            _, _, next_ra_state_list, ra_reward_list, done = mec.system_step(None, ra_action_list)
             total_ra_reward_list += ra_reward_list
             if done:
                 offload_num = 0

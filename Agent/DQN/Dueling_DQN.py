@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow.keras as keras
-from DQN.DQN import DQN_Agent, DQN_Q
+from Agent.DQN.DQN import DQN_Agent, DQN_Q
 
 tf.keras.backend.set_floatx('float32')
 

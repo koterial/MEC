@@ -2,7 +2,7 @@ import pickle
 import random
 import numpy as np
 from collections import deque
-from Replay_Buffer.Segment_Tree import Sum_Tree
+from Agent.Replay_Buffer.Segment_Tree import Sum_Tree
 
 # 经验回放池
 class Replay_Buffer():
