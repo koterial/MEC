@@ -140,8 +140,11 @@ class MA_TD3_Agent(DDPG_Agent):
         if self.prioritized_replay:
             self.replay_buffer.batch_update(index_batch, np.sum(td_error_batch_1 + td_error_batch_2, axis=1))
         if self.update_counter % self.update_freq == 0:
+            new_action_n_batch = []
+            for actor in self.target_actor_list:
+                new_action_n_batch.append(actor.get_action(state_batch).numpy())
             for actor in self.train_actor_list:
-                actor.train(state_batch, action_n_batch)
+                actor.train(state_batch, new_action_n_batch)
             self.update_target_networks(self.tau)
 
     def model_save(self, file_path):

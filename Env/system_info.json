@@ -1,9 +1,9 @@
 {
   "mec_system": {
-    "map_width": 800,
-    "map_height": 600,
-    "screen_width": 800,
-    "screen_height": 600,
+    "map_width": 350,
+    "map_height": 350,
+    "screen_width": 350,
+    "screen_height": 350,
     "tau": 0.01,
     "max_run_time": 100,
     "device_num_list": [1, 5]

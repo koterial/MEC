@@ -16,7 +16,7 @@ from Env.MEC_Env import MEC
 tf.keras.backend.set_floatx("float32")
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 gpus = tf.config.experimental.list_physical_devices("GPU")
-tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)])
+tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
 dqn_agent_list = ["DQN", "DDQN", "Dueling_DQN", "D3QN"]
 ddpg_agent_list = ["DDPG", "TD3", "MA_TD3"]
 
@@ -24,9 +24,9 @@ ddpg_agent_list = ["DDPG", "TD3", "MA_TD3"]
 class Train():
     def __init__(self):
         # 智能体类型
-        self.agent_class = "TD3"
+        self.agent_class = "MA_TD3"
         # 优先经验回放
-        self.prioritized_replay = True
+        self.prioritized_replay = False
         # 环境名称
         self.env_name = "MEC_RA"
         # 实验名称
@@ -53,10 +53,10 @@ class Train():
 
         # 训练次数以及最大步长
         self.episode_num = 100000
-        self.episode_len = 10
+        self.episode_len = 1
 
         # batch和buffer大小
-        self.batch_size = 4096
+        self.batch_size = 51
         self.buffer_size = 100000
 
         # 网络模型结构
@@ -65,8 +65,8 @@ class Train():
             self.layers_num = 3
         elif self.agent_class in ddpg_agent_list:
             self.critic_units_num = 256
-            self.critic_layers_num = 3
-            self.actor_units_num = 128
+            self.critic_layers_num = 4
+            self.actor_units_num = 64
             self.actor_layers_num = 3
 
         # Adam学习率
@@ -80,11 +80,11 @@ class Train():
         self.gamma = 0.95
 
         # 模型训练频率（单位：step）
-        self.train_freq = 100
+        self.train_freq = 10
         # 模型存储频率（单位：episode）
         self.save_rate = 10
         # 模型更新频率（单位：train）
-        self.update_freq = 4
+        self.update_freq = 2
         # 模型更新权重
         self.tau = 0.1
 
@@ -102,7 +102,7 @@ class Train():
         self.epsilon_decay = 1e-3
 
         # 创建智能体
-        self.agent = self.agents_create(1, 30, 18)
+        self.agent = self.agents_create(1, 30, [6, 6, 6])
         if self.model_load_path != None:
             print("读取模型")
             self.agent.model_load(self.model_load_path)
