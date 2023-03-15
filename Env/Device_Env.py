@@ -157,7 +157,7 @@ class Base_Device():
         self.connect_list[base_device.type][base_device.index][1] = distance
         self.connect_list[base_device.type][base_device.index][2] = transmission_power1
         received_power = get_power(transmission_power2, distance)
-        self.connect_list[base_device.type][base_device.index][3] = received_power
+        self.connect_list[base_device.type][base_device.index][3] = mw_to_dbm(received_power)
         base_device.access(self, distance, transmission_power2, transmission_power1)
         return 1
 
@@ -169,7 +169,7 @@ class Base_Device():
         self.access_list[base_device.type][base_device.index][1] = distance
         self.access_list[base_device.type][base_device.index][2] = transmission_power1
         received_power = get_power(transmission_power2, distance)
-        self.access_list[base_device.type][base_device.index][3] = received_power
+        self.access_list[base_device.type][base_device.index][3] = mw_to_dbm(received_power)
 
     # 断开链接
     # 输入: 断开对象
@@ -213,16 +213,16 @@ class Base_Device():
     def task_run(self, now_time, tau, task, upload_resources_rate, compute_resources_rate, download_resources_rate):
         assert task.state == 0 or task.state == 1 or task.state == 2
         # 获取上传、计算、下载的任务数据量
-        upload_data_size = get_speed(dbm_to_mw(self.access_list[task.local_device.type][task.local_device.index][3]),
+        upload_data = get_speed(dbm_to_mw(self.access_list[task.local_device.type][task.local_device.index][3]),
                                      upload_resources_rate * self.upload_resources) * tau
-        compute_data_size = compute_resources_rate * self.compute_resources * tau
-        download_data_size = get_speed(dbm_to_mw(task.local_device.connect_list[self.type][self.index][3]),
+        compute_data = compute_resources_rate * self.compute_resources * tau
+        download_data = get_speed(dbm_to_mw(task.local_device.connect_list[self.type][self.index][3]),
                                        download_resources_rate * self.download_resources) * tau
         # 运行任务
         if task.local_device == self:
-            run_state, _ = task.local_device_run(now_time, compute_data_size)
+            run_state, _ = task.local_device_run(now_time, compute_data)
         else:
-            run_state, _ = task.mec_run(now_time, upload_data_size, compute_data_size, download_data_size)
+            run_state, _ = task.mec_run(now_time, upload_data, compute_data, download_data)
         # 若任务没有完成并且没时间了
         if not task.live(now_time + 1) and run_state != 1:
             task.run_fail(now_time)

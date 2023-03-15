@@ -63,7 +63,7 @@ class Prioritized_Replay_Buffer():
         index_batch, state_batch, action_batch, next_state_batch, reward_batch, done_batch, weight_batch = \
             np.zeros((batch_size,), dtype=np.int32), \
             np.zeros((batch_size, self.sum_tree.data[0][0].size)), \
-            np.zeros((batch_size, )), \
+            np.zeros((batch_size, self.sum_tree.data[0][1].size)), \
             np.zeros((batch_size, self.sum_tree.data[0][2].size)), \
             np.zeros((batch_size, )), \
             np.zeros((batch_size, ), dtype=np.bool), \

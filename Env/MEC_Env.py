@@ -39,7 +39,7 @@ class MEC():
         self.max_task_store_data = max([device_info["max_task_store_data"] for device_info in self.system_device_info_list])
         self.max_task_compute_data = max([device_info["max_task_compute_data"] for device_info in self.system_device_info_list])
         self.max_task_download_data = max([device_info["max_task_download_data"] for device_info in self.system_device_info_list])
-        self.max_receive_power = get_power(max([device_info["max_transmission_power"] for device_info in self.system_device_info_list]), 1)
+        self.max_receive_power = get_power(max([device_info["max_transmission_power"] for device_info in self.system_device_info_list]), 25)
 
     # 重置系统
     def reset(self):
@@ -200,9 +200,9 @@ class MEC():
                     state[task.vm_index][2] = task.compute_data / self.max_task_compute_data
                     state[task.vm_index][3] = task.download_data / self.max_task_download_data
                     # 上行链路接收功率状态
-                    state[task.vm_index][4] = dbm_to_mw(device.access_list[task.local_device.type][task.local_device.index][3]) / dbm_to_mw(self.max_receive_power)
+                    state[task.vm_index][4] = dbm_to_mw(device.access_list[task.local_device.type][task.local_device.index][3]) / self.max_receive_power
                     # 下行链路接收功率状态
-                    state[task.vm_index][5] = dbm_to_mw(task.local_device.connect_list[device.type][device.index][3]) / dbm_to_mw(self.max_receive_power)
+                    state[task.vm_index][5] = dbm_to_mw(task.local_device.connect_list[device.type][device.index][3]) / self.max_receive_power
             if np.max(state[:, 0:4]) > 1 or np.min(state[:, 0:4]) < 0:
                 print(state)
             state_list.append(state.flatten())

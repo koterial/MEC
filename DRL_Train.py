@@ -26,7 +26,7 @@ class Train():
         # 智能体类型
         self.agent_class = "TD3"
         # 优先经验回放
-        self.prioritized_replay = False
+        self.prioritized_replay = True
         # 环境名称
         self.env_name = "MEC_RA"
         # 实验名称
@@ -84,7 +84,7 @@ class Train():
         # 模型存储频率（单位：episode）
         self.save_rate = 10
         # 模型更新频率（单位：train）
-        self.update_freq = 10
+        self.update_freq = 4
         # 模型更新权重
         self.tau = 0.1
 
@@ -185,6 +185,7 @@ class Train():
                     if self.log_dir != None:
                         with self.summary_writer.as_default():
                             tf.summary.scalar('Reward', rewards, step=each)
+                            tf.summary.scalar('Step', step, step=each)
                             tf.summary.scalar('Finish_Num', self.env.finish_num, step=each)
                             tf.summary.scalar('Fail_Num', self.env.fail_num, step=each)
                     break
