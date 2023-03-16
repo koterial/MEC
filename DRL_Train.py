@@ -16,7 +16,7 @@ from Env.MEC_Env import MEC
 tf.keras.backend.set_floatx("float32")
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 gpus = tf.config.experimental.list_physical_devices("GPU")
-tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
+tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)])
 dqn_agent_list = ["DQN", "DDQN", "Dueling_DQN", "D3QN"]
 ddpg_agent_list = ["DDPG", "TD3", "MA_TD3"]
 
@@ -48,8 +48,11 @@ class Train():
         self.model_save_path = "Model/" + self.exp_name
         # self.model_save_path = None
         # 经验存储路径
-        self.buffer_save_path = "Model/" + self.exp_name
-        # self.buffer_save_path = None
+        # self.buffer_save_path = "Model/" + self.exp_name
+        self.buffer_save_path = None
+
+        # 设置随机种子
+        self.seed = 3407
 
         # 训练次数以及最大步长
         self.episode_num = 100000
@@ -66,7 +69,7 @@ class Train():
         elif self.agent_class in ddpg_agent_list:
             self.critic_units_num = 256
             self.critic_layers_num = 4
-            self.actor_units_num = 64
+            self.actor_units_num = 128
             self.actor_layers_num = 3
 
         # Adam学习率
@@ -82,9 +85,9 @@ class Train():
         # 模型训练频率（单位：step）
         self.train_freq = 10
         # 模型存储频率（单位：episode）
-        self.save_rate = 10
+        self.save_rate = 100
         # 模型更新频率（单位：train）
-        self.update_freq = 2
+        self.update_freq = 4
         # 模型更新权重
         self.tau = 0.1
 
@@ -133,18 +136,15 @@ class Train():
         if np.random.uniform() <= self.epsilon:
             return np.random.uniform(low=-1, high=1, size=(1,))
         if self.target_action:
-            action = self.agent.target_action(np.array([state]))
+            action = self.agent.target_action(state)
         else:
-            action = self.agent.action(np.array([state]))
+            action = self.agent.action(state)
         if self.add_noise:
             action = self.noise(action)
         return action
 
-    def noise(self, action, noise_bound=None):
-        if noise_bound == None:
-            noise = np.random.uniform(low=-1, high=1, size=(action.size,)) * self.noise_bound
-        else:
-            noise = np.random.uniform(low=-1, high=1, size=(action.size,)) * noise_bound
+    def noise(self, action):
+        noise = np.random.uniform(low=-1, high=1, size=(action.size,)) * self.noise_bound
         noise_action = noise + action
         return noise_action
 
@@ -152,22 +152,32 @@ class Train():
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.min_epsilon else self.min_epsilon
         return self.epsilon
 
+    def set_seed(self):
+        if self.seed == None:
+            pass
+        else:
+            tf.random.set_seed(self.seed)
+            np.random.seed(self.seed)
+            os.environ["PYTHONHASHSEED"] = str(self.seed)
+
     def train(self):
+        self.set_seed()
         rewards_list = []
         sum_step = 0
         for each in range(self.episode_num):
             rewards = 0
-            _, state = self.env.reset()
-            state = state[0]
+            _, state_list = self.env.reset()
+            state = state_list[0]
             step = 0
             while True:
                 if self.agent_class in dqn_agent_list:
                     action = self.dqn_act(state)
                 elif self.agent_class in ddpg_agent_list:
                     action = self.ddpg_act(state)
-                _, _, next_state, reward, done = self.env.system_step(None, [action])
-                next_state = next_state[0]
-                reward = reward[0]
+                action_list = [action]
+                _, _, next_state_list, reward_list, done = self.env.system_step(None, action_list)
+                next_state = next_state_list[0]
+                reward = reward_list[0]
                 step += 1
                 sum_step += 1
                 rewards += reward
@@ -190,7 +200,7 @@ class Train():
                             tf.summary.scalar('Fail_Num', self.env.fail_num, step=each)
                     break
             if each % self.save_rate == 0 and self.model_save_path != None:
-                self.agent.model_save(self.model_save_path)
+                self.agent.model_save(self.model_save_path, self.seed)
             if each % self.save_rate == 0 and self.buffer_save_path != None:
                 self.agent.buffer_save(self.buffer_save_path)
 

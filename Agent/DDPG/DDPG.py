@@ -68,12 +68,12 @@ class DDPG_Agent():
         else:
             self.replay_buffer = Replay_Buffer(buffer_size)
 
-    def action(self, state_batch):
-        action = self.train_actor.get_action(state_batch)[0]
+    def action(self, state):
+        action = self.train_actor.get_action(np.array([state]))[0]
         return action.numpy()
 
-    def target_action(self, state_batch):
-        action = self.target_actor.get_action(state_batch)[0]
+    def target_action(self, state):
+        action = self.target_actor.get_action(np.array([state]))[0]
         return action.numpy()
 
     def update_target_networks(self, tau):
@@ -94,7 +94,7 @@ class DDPG_Agent():
         else:
             state_batch, action_batch, next_state_batch, reward_batch, done_batch = self.replay_buffer.sample(
                 self.batch_size)
-            weight_batch = tf.ones(shape=[self.batch_size, ], dtype=tf.float32)
+            weight_batch = tf.ones(shape=(self.batch_size,), dtype=tf.float32)
         next_action_batch = self.target_actor.get_action(next_state_batch)
         next_q_batch = self.target_critic.model([next_state_batch] + [next_action_batch])
         target_q_batch = reward_batch[:, None] + self.gamma * next_q_batch * (1 - done_batch[:, None].astype(int))
@@ -108,7 +108,7 @@ class DDPG_Agent():
     def remember(self, state, action, next_state, reward, done):
         self.replay_buffer.remember(state, action, next_state, reward, done)
 
-    def model_save(self, file_path):
+    def model_save(self, file_path, seed):
         if os.path.exists(file_path):
             pass
         else:
@@ -117,7 +117,8 @@ class DDPG_Agent():
         self.target_actor.model.save_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
         file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
         file.write(
-            "state_shape:" + str(self.state_shape) +
+            "seed:" + str(seed) +
+            "\nstate_shape:" + str(self.state_shape) +
             "\naction_shape:" + str(self.action_shape) +
             "\ncritic_units_num:" + str(self.critic_units_num) +
             "\ncritic_layers_num:" + str(self.critic_layers_num) +
@@ -179,31 +180,29 @@ class DDPG_Critic():
         self.model = self.model_create()
 
     def model_create(self):
-        # 创建输入端
-        self.state_input_layer = [
-            keras.Input(shape=self.state_shape, name="Agent{}_critic_state_input".format(self.agent_index))]
-        self.action_input_layer = [
-            keras.Input(shape=self.action_shape, name="Agent{}_critic_action_input".format(self.agent_index))]
+        # 创建状态输入端
+        self.state_input_layers = [
+            keras.Input(shape=self.state_shape, name="Agent{}_critic_state_input".format(self.agent_index))
+        ]
+        # 创建动作输入端
+        self.action_input_layers = [
+            keras.Input(shape=sum(self.action_shape), name="Agent{}_critic_action_input".format(self.agent_index))
+        ]
         # 创建中间层
-        self.hidden_layers = []
-        for each in range(self.layers_num):
-            layer = keras.layers.Dense(self.units_num, activation="relu",
-                                       name="Agent{}_critic_hidden{}".format(self.agent_index, each)
-                                       )
-            self.hidden_layers.append(layer)
+        self.hidden_layers = [
+            keras.layers.Dense(self.units_num, activation="relu", name="Agent{}_critic_hidden{}".format(self.agent_index, each)) for each in range(self.layers_num)
+        ]
         # 创建输出端
-        self.output_layer = keras.layers.Dense(1, activation="linear",
-                                               name="Agent{}_critic_output".format(self.agent_index)
-                                               )
+        self.output_layers = keras.layers.Dense(1, activation="linear", name="Agent{}_critic_output".format(self.agent_index))
         # 创建链接层
-        self.input_concat_layer = keras.layers.Concatenate()
+        self.input_concat_layers = keras.layers.Concatenate()
         # 链接各层
-        x = self.input_concat_layer(self.state_input_layer + self.action_input_layer)
+        x = self.input_concat_layers(self.state_input_layers + self.action_input_layers)
         for each in range(self.layers_num):
             x = self.hidden_layers[each](x)
-        output = self.output_layer(x)
+        output = self.output_layers(x)
         # 创建模型
-        model = keras.Model(inputs=self.state_input_layer + self.action_input_layer, outputs=output)
+        model = keras.Model(inputs=self.state_input_layers + self.action_input_layers, outputs=output)
         return model
 
     def train(self, state_batch, action_batch, target_q_batch, weight_batch):
@@ -219,8 +218,7 @@ class DDPG_Critic():
 
 
 class DDPG_Actor():
-    def __init__(self, agent_index, state_shape, action_shape, units_num, layers_num, lr, critic, activation="linear",
-                 clip_norm=0.5):
+    def __init__(self, agent_index, state_shape, action_shape, units_num, layers_num, lr, critic, activation="linear", clip_norm=0.5):
         self.agent_index = agent_index
         self.state_shape = state_shape
         self.action_shape = action_shape
@@ -234,25 +232,31 @@ class DDPG_Actor():
         self.model = self.model_create()
 
     def model_create(self):
-        # 创建输入端
-        self.state_input_layer = keras.Input(shape=self.state_shape,
-                                             name="Agent{}_actor_input".format(self.agent_index))
+        # 创建状态输入端
+        self.state_input_layers = [
+            keras.Input(shape=self.state_shape, name="Agent{}_actor_input".format(self.agent_index))
+        ]
         # 创建中间层
-        self.hidden_layers = []
-        for each in range(self.layers_num):
-            layer = keras.layers.Dense(self.units_num, activation="relu",
-                                       name="Agent{}_actor_hidden{}".format(self.agent_index, each))
-            self.hidden_layers.append(layer)
-        # 创建输出端
-        self.action_output_layer = keras.layers.Dense(self.action_shape, activation=self.activation,
-                                                      name="Agent{}_actor_output".format(self.agent_index))
+        self.hidden_layers = [
+            keras.layers.Dense(self.units_num, activation="relu", name="Agent{}_actor_hidden{}".format(self.agent_index, each)) for each in range(self.layers_num)
+        ]
+        # 创建动作输出端
+        self.action_output_layers = [
+            keras.layers.Dense(shape, activation=self.activation, name="Agent{}_actor_output{}".format(self.agent_index, each)) for each, shape in enumerate(self.action_shape)
+        ]
+        # 创建链接层
+        self.input_concat_layers = keras.layers.Concatenate()
+        self.output_concat_layers = keras.layers.Concatenate()
         # 链接各层
-        x = self.hidden_layers[0](self.state_input_layer)
-        for each in range(1, self.layers_num):
+        x = self.input_concat_layers(self.state_input_layers)
+        for each in range(self.layers_num):
             x = self.hidden_layers[each](x)
-        output = self.action_output_layer(x)
+        output = []
+        for layers in self.action_output_layers:
+            output.append(layers(x))
+        output = self.output_concat_layers(output)
         # 创建模型
-        model = keras.Model(inputs=self.state_input_layer, outputs=output)
+        model = keras.Model(inputs=self.state_input_layers, outputs=output)
         return model
 
     def get_action(self, state_batch):

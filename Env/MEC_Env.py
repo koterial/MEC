@@ -175,9 +175,9 @@ class MEC():
             upload_act = norm(action[0])
             compute_act = norm(action[1])
             download_act = norm(action[2])
-            action[0, :] = upload_act
-            action[1, :] = compute_act
-            action[2, :] = download_act
+            action[0] = upload_act
+            action[1] = compute_act
+            action[2] = download_act
             new_action_list.append(action)
         return new_action_list
 
@@ -219,13 +219,12 @@ if __name__ == "__main__":
         _, ra_state_list = mec.reset()
         total_ra_reward_list = np.zeros((mec.system_device_num_list[0],)).tolist()
         while True:
-            ra_action_list = [np.random.uniform(size=(15, )) for _, device in mec.system_device_list[0].items()]
+            ra_action_list = [np.random.uniform(size=(18,)) for _, device in mec.system_device_list[0].items()]
             for action in ra_action_list:
                 action = np.reshape(action, (3, -1))
                 action[0] = tf.nn.softmax(action[0]).numpy()
                 action[1] = tf.nn.softmax(action[1]).numpy()
                 action[2] = tf.nn.softmax(action[2]).numpy()
-                action = np.reshape(action, (15,))
             _, _, next_ra_state_list, ra_reward_list, done = mec.system_step(None, ra_action_list)
             total_ra_reward_list += ra_reward_list
             if done:

@@ -31,24 +31,24 @@ class MA_TD3_Agent(DDPG_Agent):
         self.clip_norm = clip_norm
 
         self.train_critic_1 = DDPG_Critic(agent_index=self.agent_index, state_shape=self.state_shape,
-                                          action_shape=sum(self.action_n_shape),
+                                          action_shape=self.action_n_shape,
                                           units_num=self.critic_units_num, layers_num=self.critic_layers_num,
                                           lr=self.critic_lr,
                                           clip_norm=self.clip_norm)
         self.target_critic_1 = DDPG_Critic(agent_index=self.agent_index, state_shape=self.state_shape,
-                                           action_shape=sum(self.action_n_shape),
+                                           action_shape=self.action_n_shape,
                                            units_num=self.critic_units_num, layers_num=self.critic_layers_num,
                                            lr=self.critic_lr,
                                            clip_norm=self.clip_norm)
         self.target_critic_1.model.set_weights(self.train_critic_1.model.get_weights())
 
         self.train_critic_2 = DDPG_Critic(agent_index=self.agent_index, state_shape=self.state_shape,
-                                          action_shape=sum(self.action_n_shape),
+                                          action_shape=self.action_n_shape,
                                           units_num=self.critic_units_num, layers_num=self.critic_layers_num,
                                           lr=self.critic_lr,
                                           clip_norm=self.clip_norm)
         self.target_critic_2 = DDPG_Critic(agent_index=self.agent_index, state_shape=self.state_shape,
-                                           action_shape=sum(self.action_n_shape),
+                                           action_shape=self.action_n_shape,
                                            units_num=self.critic_units_num, layers_num=self.critic_layers_num,
                                            lr=self.critic_lr,
                                            clip_norm=self.clip_norm)
@@ -58,12 +58,12 @@ class MA_TD3_Agent(DDPG_Agent):
         self.target_actor_list = []
         for actor_index, action_shape in enumerate(self.action_n_shape):
             train_actor = MA_TD3_Actor(agent_index=self.agent_index, actor_index=actor_index, state_shape=self.state_shape,
-                                     action_shape=action_shape,
+                                     action_shape=[action_shape],
                                      units_num=self.actor_units_num, layers_num=self.actor_layers_num,
                                      lr=self.actor_lr,
                                      critic=self.train_critic_1, activation=self.activation, clip_norm=self.clip_norm)
             target_actor = MA_TD3_Actor(agent_index=self.agent_index, actor_index=actor_index, state_shape=self.state_shape,
-                                      action_shape=action_shape,
+                                      action_shape=[action_shape],
                                       units_num=self.actor_units_num, layers_num=self.actor_layers_num,
                                       lr=self.actor_lr,
                                       critic=self.train_critic_1, activation=self.activation, clip_norm=self.clip_norm)
@@ -85,17 +85,17 @@ class MA_TD3_Agent(DDPG_Agent):
         else:
             self.replay_buffer = Replay_Buffer(buffer_size)
 
-    def action(self, state_batch):
+    def action(self, state):
         action = []
         for actor in self.train_actor_list:
-            action.append(actor.get_action(state_batch)[0].numpy())
+            action.append(actor.get_action(np.array([state]))[0].numpy())
         action = np.concatenate(action, axis=0)
         return action
 
-    def target_action(self, state_batch):
+    def target_action(self, state):
         action = []
         for actor in self.target_actor_list:
-            action.append(actor.get_action(state_batch)[0].numpy())
+            action.append(actor.get_action(np.array([state]))[0].numpy())
         action = np.concatenate(action, axis=0)
         return action
 
@@ -123,22 +123,16 @@ class MA_TD3_Agent(DDPG_Agent):
         next_action_n_batch = []
         for actor in self.target_actor_list:
             next_action_n_batch.append(actor.get_action(next_state_batch).numpy())
-        action_n_batch = action_n_batch.reshape((len(action_n_batch), len(self.action_n_shape), -1)).transpose(1, 0, 2)
-        new_action_n_batch = []
-        for each in range(len(self.action_n_shape)):
-            new_action_n_batch.append(action_n_batch[each, :, :])
-        action_n_batch = new_action_n_batch
-        del new_action_n_batch
         next_action_n_batch = np.concatenate(next_action_n_batch, axis=1)
         next_q_batch = np.empty([2, self.batch_size], dtype=np.float32)
         next_q_batch[0] = self.target_critic_1.model([next_state_batch] + [next_action_n_batch]).numpy()[:, 0]
         next_q_batch[1] = self.target_critic_2.model([next_state_batch] + [next_action_n_batch]).numpy()[:, 0]
         next_q_batch = np.min(next_q_batch, 0)[:, None]
         target_q_batch = reward_batch[:, None] + self.gamma * next_q_batch * (1 - done_batch[:, None].astype(int))
-        td_error_batch_1 = self.train_critic_1.train(state_batch, np.concatenate(action_n_batch, axis=1), target_q_batch, weight_batch)
-        td_error_batch_2 = self.train_critic_2.train(state_batch, np.concatenate(action_n_batch, axis=1), target_q_batch, weight_batch)
+        td_error_batch_1 = self.train_critic_1.train(state_batch, action_n_batch, target_q_batch, weight_batch)
+        td_error_batch_2 = self.train_critic_2.train(state_batch, action_n_batch, target_q_batch, weight_batch)
         if self.prioritized_replay:
-            self.replay_buffer.batch_update(index_batch, np.sum(td_error_batch_1 + td_error_batch_2, axis=1))
+            self.replay_buffer.batch_update(index_batch, np.sum((td_error_batch_1 + td_error_batch_2)/2, axis=1))
         if self.update_counter % self.update_freq == 0:
             new_action_n_batch = []
             for actor in self.target_actor_list:
@@ -147,7 +141,7 @@ class MA_TD3_Agent(DDPG_Agent):
                 actor.train(state_batch, new_action_n_batch)
             self.update_target_networks(self.tau)
 
-    def model_save(self, file_path):
+    def model_save(self, file_path, seed):
         if os.path.exists(file_path):
             pass
         else:
@@ -158,7 +152,8 @@ class MA_TD3_Agent(DDPG_Agent):
             actor.model.save_weights(file_path + "/Agent{}_Actor{}_model.h5".format(self.agent_index, actor.actor_index))
         file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
         file.write(
-            "state_shape:" + str(self.state_shape) +
+            "seed:" + str(seed) +
+            "\nstate_shape:" + str(self.state_shape) +
             "\naction_n_shape:" + str(self.action_n_shape) +
             "\ncritic_units_num:" + str(self.critic_units_num) +
             "\ncritic_layers_num:" + str(self.critic_layers_num) +

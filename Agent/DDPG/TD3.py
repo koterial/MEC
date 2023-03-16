@@ -108,12 +108,12 @@ class TD3_Agent(DDPG_Agent):
         td_error_batch_1 = self.train_critic_1.train(state_batch, action_batch, target_q_batch, weight_batch)
         td_error_batch_2 = self.train_critic_2.train(state_batch, action_batch, target_q_batch, weight_batch)
         if self.prioritized_replay:
-            self.replay_buffer.batch_update(index_batch, np.sum(td_error_batch_1 + td_error_batch_2, axis=1))
+            self.replay_buffer.batch_update(index_batch, np.sum((td_error_batch_1 + td_error_batch_2)/2, axis=1))
         if self.update_counter % self.update_freq == 0:
             self.train_actor.train(state_batch)
             self.update_target_networks(self.tau)
 
-    def model_save(self, file_path):
+    def model_save(self, file_path, seed):
         if os.path.exists(file_path):
             pass
         else:
@@ -123,7 +123,8 @@ class TD3_Agent(DDPG_Agent):
         self.target_actor.model.save_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
         file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
         file.write(
-            "state_shape:" + str(self.state_shape) +
+            "seed:" + str(seed) +
+            "\nstate_shape:" + str(self.state_shape) +
             "\naction_shape:" + str(self.action_shape) +
             "\ncritic_units_num:" + str(self.critic_units_num) +
             "\ncritic_layers_num:" + str(self.critic_layers_num) +
