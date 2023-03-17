@@ -165,6 +165,10 @@ class MEC():
     # 对资源分配策略进行处理
     def ra_action_deal(self, action_list):
         def norm(act):
+            act = np.where(act < 0, 0, act)
+            sum_act = np.sum(act)
+            for each, a in enumerate(act):
+                act[each] = a / sum_act
             act = np.where(act < 1e-4, 0, act)
             if np.sum(act) > 1.001:
                 print("error action")

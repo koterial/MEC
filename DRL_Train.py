@@ -24,7 +24,7 @@ ddpg_agent_list = ["DDPG", "TD3", "MA_TD3"]
 class Train():
     def __init__(self):
         # 智能体类型
-        self.agent_class = "MA_TD3"
+        self.agent_class = "TD3"
         # 优先经验回放
         self.prioritized_replay = False
         # 环境名称
@@ -92,9 +92,11 @@ class Train():
         self.tau = 0.1
 
         # 添加环境噪音
-        self.add_noise = False
+        self.add_explore_noise = False
         # 环境噪音边界值
-        self.noise_bound = 0.1
+        self.explore_noise_scale = 0.05
+        self.eval_noise_scale = 0.1
+        self.eval_noise_bound = 0.2
 
         # 使用Target进行预测
         self.target_action = True
@@ -128,7 +130,7 @@ class Train():
             action = self.agent.target_action(np.array([state]))
         else:
             action = self.agent.action(np.array([state]))
-        if self.add_noise:
+        if self.add_explore_noise:
             action = self.noise(action)
         return np.argmax(action)
 
@@ -139,12 +141,12 @@ class Train():
             action = self.agent.target_action(state)
         else:
             action = self.agent.action(state)
-        if self.add_noise:
+        if self.add_explore_noise:
             action = self.noise(action)
         return action
 
     def noise(self, action):
-        noise = np.random.uniform(low=-1, high=1, size=(action.size,)) * self.noise_bound
+        noise = np.random.normal(loc=0.0, scale=self.explore_noise_scale, size=action.shape)
         noise_action = noise + action
         return noise_action
 
@@ -245,7 +247,7 @@ class Train():
             agent = TD3_Agent(agent_index=index, state_shape=state_shape, action_shape=action_shape, critic_units_num=self.critic_units_num,
                                critic_layers_num=self.critic_layers_num, critic_lr=self.critic_lr,
                                actor_units_num=self.actor_units_num, actor_layers_num=self.actor_layers_num,
-                               actor_lr=self.actor_lr,
+                               actor_lr=self.actor_lr, eval_noise_scale=self.eval_noise_scale, eval_noise_bound=self.eval_noise_bound,
                                batch_size=self.batch_size, buffer_size=self.buffer_size, gamma=self.gamma, tau=self.tau,
                                update_freq=self.update_freq,
                                prioritized_replay=self.prioritized_replay, activation="softmax")
@@ -253,7 +255,7 @@ class Train():
             agent = MA_TD3_Agent(agent_index=index, state_shape=state_shape, action_n_shape=action_shape, critic_units_num=self.critic_units_num,
                                critic_layers_num=self.critic_layers_num, critic_lr=self.critic_lr,
                                actor_units_num=self.actor_units_num, actor_layers_num=self.actor_layers_num,
-                               actor_lr=self.actor_lr,
+                               actor_lr=self.actor_lr, eval_noise_scale=self.eval_noise_scale, eval_noise_bound=self.eval_noise_bound,
                                batch_size=self.batch_size, buffer_size=self.buffer_size, gamma=self.gamma, tau=self.tau,
                                update_freq=self.update_freq,
                                prioritized_replay=self.prioritized_replay, activation="softmax")

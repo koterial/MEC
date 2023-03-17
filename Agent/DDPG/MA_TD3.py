@@ -10,7 +10,8 @@ tf.keras.backend.set_floatx('float32')
 
 class MA_TD3_Agent(DDPG_Agent):
     def __init__(self, agent_index, state_shape, action_n_shape, critic_units_num, critic_layers_num, critic_lr,
-                 actor_units_num, actor_layers_num, actor_lr, batch_size, buffer_size, gamma, tau, update_freq=2,
+                 actor_units_num, actor_layers_num, actor_lr, eval_noise_scale, eval_noise_bound,
+                 batch_size, buffer_size, gamma, tau, update_freq=2,
                  activation="linear", prioritized_replay=False, alpha=0.6, beta=0.4, beta_increase=1e-3, max_priority=1,
                  min_priority=0.01, clip_norm=0.5
                  ):
@@ -24,6 +25,8 @@ class MA_TD3_Agent(DDPG_Agent):
         self.actor_layers_num = actor_layers_num
         self.activation = activation
         self.actor_lr = actor_lr
+        self.eval_noise_scale = eval_noise_scale
+        self.eval_noise_bound = eval_noise_bound
         self.gamma = gamma
         self.tau = tau
         self.update_freq = update_freq
@@ -122,7 +125,11 @@ class MA_TD3_Agent(DDPG_Agent):
             weight_batch = tf.ones(shape=[self.batch_size, ], dtype=tf.float32)
         next_action_n_batch = []
         for actor in self.target_actor_list:
-            next_action_n_batch.append(actor.get_action(next_state_batch).numpy())
+            next_action_batch = actor.get_action(next_state_batch).numpy()
+            noise = np.random.normal(loc=0.0, scale=self.eval_noise_scale, size=next_action_batch.shape)
+            noise = np.clip(noise, -self.eval_noise_bound, self.eval_noise_bound)
+            next_action_batch = noise + next_action_batch
+            next_action_n_batch.append(next_action_batch)
         next_action_n_batch = np.concatenate(next_action_n_batch, axis=1)
         next_q_batch = np.empty([2, self.batch_size], dtype=np.float32)
         next_q_batch[0] = self.target_critic_1.model([next_state_batch] + [next_action_n_batch]).numpy()[:, 0]
@@ -162,6 +169,8 @@ class MA_TD3_Agent(DDPG_Agent):
             "\nactor_layers_num:" + str(self.actor_layers_num) +
             "\nactivation:" + str(self.activation) +
             "\nactor_lr:" + str(self.actor_lr) +
+            "\neval_noise_scale:" + str(self.eval_noise_scale) +
+            "\neval_noise_bound:" + str(self.eval_noise_bound) +
             "\ngamme:" + str(self.gamma) +
             "\ntau:" + str(self.tau) +
             "\nupdate_freq:" + str(self.update_freq) +
