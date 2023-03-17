@@ -99,10 +99,10 @@ class DDPG_Agent():
         next_q_batch = self.target_critic.model([next_state_batch] + [next_action_batch])
         target_q_batch = reward_batch[:, None] + self.gamma * next_q_batch * (1 - done_batch[:, None].astype(int))
         td_error_batch = self.train_critic.train(state_batch, action_batch, target_q_batch, weight_batch)
-        self.train_actor.train(state_batch)
         if self.prioritized_replay:
             self.replay_buffer.batch_update(index_batch, np.sum(td_error_batch, axis=1))
         if self.update_counter % self.update_freq == 0:
+            self.train_actor.train(state_batch)
             self.update_target_networks(self.tau)
 
     def remember(self, state, action, next_state, reward, done):
@@ -113,9 +113,9 @@ class DDPG_Agent():
             pass
         else:
             os.makedirs(file_path)
-        self.target_critic.model.save_weights(file_path + "/Agent{}_Critic_model.h5".format(self.agent_index))
-        self.target_actor.model.save_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
-        file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
+        self.target_critic.model.save_weights(file_path + "/Agent_{}_Critic_model.h5".format(self.agent_index))
+        self.target_actor.model.save_weights(file_path + "/Agent_{}_Actor_model.h5".format(self.agent_index))
+        file = open(file_path + "/Agent_{}_train.log".format(self.agent_index), "w")
         file.write(
             "seed:" + str(seed) +
             "\nstate_shape:" + str(self.state_shape) +
@@ -143,15 +143,15 @@ class DDPG_Agent():
 
     def model_load(self, file_path, agent_index=None):
         if agent_index == None:
-            self.target_critic.model.load_weights(file_path + "/Agent{}_Critic_model.h5".format(self.agent_index))
-            self.train_critic.model.load_weights(file_path + "/Agent{}_Critic_model.h5".format(self.agent_index))
-            self.target_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
-            self.train_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
+            self.target_critic.model.load_weights(file_path + "/Agent_{}_Critic_model.h5".format(self.agent_index))
+            self.train_critic.model.load_weights(file_path + "/Agent_{}_Critic_model.h5".format(self.agent_index))
+            self.target_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(self.agent_index))
+            self.train_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(self.agent_index))
         else:
-            self.target_critic.model.load_weights(file_path + "/Agent{}_Critic_model.h5".format(agent_index))
-            self.train_critic.model.load_weights(file_path + "/Agent{}_Critic_model.h5".format(agent_index))
-            self.target_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(agent_index))
-            self.train_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(agent_index))
+            self.target_critic.model.load_weights(file_path + "/Agent_{}_Critic_model.h5".format(agent_index))
+            self.train_critic.model.load_weights(file_path + "/Agent_{}_Critic_model.h5".format(agent_index))
+            self.target_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(agent_index))
+            self.train_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(agent_index))
 
 
     def buffer_save(self, file_path):
@@ -182,18 +182,18 @@ class DDPG_Critic():
     def model_create(self):
         # 创建状态输入端
         self.state_input_layers = [
-            keras.Input(shape=self.state_shape, name="Agent{}_critic_state_input".format(self.agent_index))
+            keras.Input(shape=self.state_shape, name="Agent_{}_critic_state_input".format(self.agent_index))
         ]
         # 创建动作输入端
         self.action_input_layers = [
-            keras.Input(shape=sum(self.action_shape), name="Agent{}_critic_action_input".format(self.agent_index))
+            keras.Input(shape=sum(self.action_shape), name="Agent_{}_critic_action_input".format(self.agent_index))
         ]
         # 创建中间层
         self.hidden_layers = [
-            keras.layers.Dense(self.units_num, activation="relu", name="Agent{}_critic_hidden{}".format(self.agent_index, each)) for each in range(self.layers_num)
+            keras.layers.Dense(self.units_num, activation="relu", name="Agent_{}_critic_hidden_{}".format(self.agent_index, each)) for each in range(self.layers_num)
         ]
         # 创建输出端
-        self.output_layers = keras.layers.Dense(1, activation="linear", name="Agent{}_critic_output".format(self.agent_index))
+        self.output_layers = keras.layers.Dense(1, activation="linear", name="Agent_{}_critic_output".format(self.agent_index))
         # 创建链接层
         self.input_concat_layers = keras.layers.Concatenate()
         # 链接各层
@@ -234,15 +234,15 @@ class DDPG_Actor():
     def model_create(self):
         # 创建状态输入端
         self.state_input_layers = [
-            keras.Input(shape=self.state_shape, name="Agent{}_actor_input".format(self.agent_index))
+            keras.Input(shape=self.state_shape, name="Agent_{}_actor_input".format(self.agent_index))
         ]
         # 创建中间层
         self.hidden_layers = [
-            keras.layers.Dense(self.units_num, activation="relu", name="Agent{}_actor_hidden{}".format(self.agent_index, each)) for each in range(self.layers_num)
+            keras.layers.Dense(self.units_num, activation="relu", name="Agent_{}_actor_hidden_{}".format(self.agent_index, each)) for each in range(self.layers_num)
         ]
         # 创建动作输出端
         self.action_output_layers = [
-            keras.layers.Dense(shape, activation=self.activation, name="Agent{}_actor_output{}".format(self.agent_index, each)) for each, shape in enumerate(self.action_shape)
+            keras.layers.Dense(shape, activation=self.activation, name="Agent_{}_actor_output_{}".format(self.agent_index, each)) for each, shape in enumerate(self.action_shape)
         ]
         # 创建链接层
         self.input_concat_layers = keras.layers.Concatenate()

@@ -118,10 +118,10 @@ class TD3_Agent(DDPG_Agent):
             pass
         else:
             os.makedirs(file_path)
-        self.target_critic_1.model.save_weights(file_path + "/Agent{}_Critic_1_model.h5".format(self.agent_index))
-        self.target_critic_2.model.save_weights(file_path + "/Agent{}_Critic_2_model.h5".format(self.agent_index))
-        self.target_actor.model.save_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
-        file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
+        self.target_critic_1.model.save_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(self.agent_index))
+        self.target_critic_2.model.save_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(self.agent_index))
+        self.target_actor.model.save_weights(file_path + "/Agent_{}_Actor_model.h5".format(self.agent_index))
+        file = open(file_path + "/Agent_{}_train.log".format(self.agent_index), "w")
         file.write(
             "seed:" + str(seed) +
             "\nstate_shape:" + str(self.state_shape) +
@@ -149,16 +149,16 @@ class TD3_Agent(DDPG_Agent):
 
     def model_load(self, file_path, agent_index=None):
         if agent_index == None:
-            self.target_critic_1.model.load_weights(file_path + "/Agent{}_Critic_1_model.h5".format(self.agent_index))
-            self.train_critic_1.model.load_weights(file_path + "/Agent{}_Critic_1_model.h5".format(self.agent_index))
-            self.target_critic_2.model.load_weights(file_path + "/Agent{}_Critic_2_model.h5".format(self.agent_index))
-            self.train_critic_2.model.load_weights(file_path + "/Agent{}_Critic_2_model.h5".format(self.agent_index))
-            self.target_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
-            self.train_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(self.agent_index))
+            self.target_critic_1.model.load_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(self.agent_index))
+            self.train_critic_1.model.load_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(self.agent_index))
+            self.target_critic_2.model.load_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(self.agent_index))
+            self.train_critic_2.model.load_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(self.agent_index))
+            self.target_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(self.agent_index))
+            self.train_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(self.agent_index))
         else:
-            self.target_critic_1.model.load_weights(file_path + "/Agent{}_Critic_1_model.h5".format(agent_index))
-            self.train_critic_1.model.load_weights(file_path + "/Agent{}_Critic_1_model.h5".format(agent_index))
-            self.target_critic_2.model.load_weights(file_path + "/Agent{}_Critic_2_model.h5".format(agent_index))
-            self.train_critic_2.model.load_weights(file_path + "/Agent{}_Critic_2_model.h5".format(agent_index))
-            self.target_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(agent_index))
-            self.train_actor.model.load_weights(file_path + "/Agent{}_Actor_model.h5".format(agent_index))
+            self.target_critic_1.model.load_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(agent_index))
+            self.train_critic_1.model.load_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(agent_index))
+            self.target_critic_2.model.load_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(agent_index))
+            self.train_critic_2.model.load_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(agent_index))
+            self.target_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(agent_index))
+            self.train_actor.model.load_weights(file_path + "/Agent_{}_Actor_model.h5".format(agent_index))

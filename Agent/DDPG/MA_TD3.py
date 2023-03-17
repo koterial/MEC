@@ -135,8 +135,8 @@ class MA_TD3_Agent(DDPG_Agent):
             self.replay_buffer.batch_update(index_batch, np.sum((td_error_batch_1 + td_error_batch_2)/2, axis=1))
         if self.update_counter % self.update_freq == 0:
             new_action_n_batch = []
-            for actor in self.target_actor_list:
-                new_action_n_batch.append(actor.get_action(state_batch).numpy())
+            for actor in self.train_actor_list:
+                new_action_n_batch.append(actor.get_action(state_batch))
             for actor in self.train_actor_list:
                 actor.train(state_batch, new_action_n_batch)
             self.update_target_networks(self.tau)
@@ -146,11 +146,11 @@ class MA_TD3_Agent(DDPG_Agent):
             pass
         else:
             os.makedirs(file_path)
-        self.target_critic_1.model.save_weights(file_path + "/Agent{}_Critic_1_model.h5".format(self.agent_index))
-        self.target_critic_2.model.save_weights(file_path + "/Agent{}_Critic_2_model.h5".format(self.agent_index))
+        self.target_critic_1.model.save_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(self.agent_index))
+        self.target_critic_2.model.save_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(self.agent_index))
         for index, actor in enumerate(self.target_actor_list):
-            actor.model.save_weights(file_path + "/Agent{}_Actor{}_model.h5".format(self.agent_index, actor.actor_index))
-        file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
+            actor.model.save_weights(file_path + "/Agent_{}_Actor_{}_model.h5".format(self.agent_index, actor.actor_index))
+        file = open(file_path + "/Agent_{}_train.log".format(self.agent_index), "w")
         file.write(
             "seed:" + str(seed) +
             "\nstate_shape:" + str(self.state_shape) +
@@ -175,14 +175,14 @@ class MA_TD3_Agent(DDPG_Agent):
         )
 
     def model_load(self, file_path):
-        self.target_critic_1.model.load_weights(file_path + "/Agent{}_Critic_1_model.h5".format(self.agent_index))
-        self.train_critic_1.model.load_weights(file_path + "/Agent{}_Critic_1_model.h5".format(self.agent_index))
-        self.target_critic_2.model.load_weights(file_path + "/Agent{}_Critic_2_model.h5".format(self.agent_index))
-        self.train_critic_2.model.load_weights(file_path + "/Agent{}_Critic_2_model.h5".format(self.agent_index))
+        self.target_critic_1.model.load_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(self.agent_index))
+        self.train_critic_1.model.load_weights(file_path + "/Agent_{}_Critic_1_model.h5".format(self.agent_index))
+        self.target_critic_2.model.load_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(self.agent_index))
+        self.train_critic_2.model.load_weights(file_path + "/Agent_{}_Critic_2_model.h5".format(self.agent_index))
         for index, actor in enumerate(self.target_actor_list):
-            actor.model.load_weights(file_path + "/Agent{}_Actor{}_model.h5".format(self.agent_index, actor.actor_index))
+            actor.model.load_weights(file_path + "/Agent_{}_Actor_{}_model.h5".format(self.agent_index, actor.actor_index))
         for index, actor in enumerate(self.train_actor_list):
-            actor.model.load_weights(file_path + "/Agent{}_Actor{}_model.h5".format(self.agent_index, actor.actor_index))
+            actor.model.load_weights(file_path + "/Agent_{}_Actor_{}_model.h5".format(self.agent_index, actor.actor_index))
 
 class MA_TD3_Actor(DDPG_Actor):
     def __init__(self, agent_index, actor_index, state_shape, action_shape, units_num, layers_num, lr, critic, activation="linear",
@@ -194,7 +194,7 @@ class MA_TD3_Actor(DDPG_Actor):
         with tf.GradientTape() as tape:
             new_action_batch = self.model(state_batch)
             action_n_batch[self.actor_index] = new_action_batch
-            q_batch = self.critic.model([state_batch] + [np.concatenate(action_n_batch, axis=1)])
+            q_batch = self.critic.model([state_batch] + [tf.concat(action_n_batch, axis=1)])
             policy_regularization = tf.math.reduce_mean(tf.math.square(new_action_batch))
             loss = -tf.math.reduce_mean(q_batch) + 1e-3 * policy_regularization
         gradients = tape.gradient(loss, self.model.trainable_variables)

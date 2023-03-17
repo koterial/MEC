@@ -45,8 +45,8 @@ class Train():
         # self.buffer_load_path = "Model/" + self.exp_name
         self.buffer_load_path = None
         # 模型存储路径
-        self.model_save_path = "Model/" + self.exp_name
-        # self.model_save_path = None
+        # self.model_save_path = "Model/" + self.exp_name
+        self.model_save_path = None
         # 经验存储路径
         # self.buffer_save_path = "Model/" + self.exp_name
         self.buffer_save_path = None
