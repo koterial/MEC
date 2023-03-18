@@ -24,7 +24,7 @@ ddpg_agent_list = ["DDPG", "TD3", "MA_TD3"]
 class Train():
     def __init__(self):
         # 智能体类型
-        self.agent_class = "TD3"
+        self.agent_class = "DQN"
         # 优先经验回放
         self.prioritized_replay = True
         # 环境名称
@@ -36,8 +36,8 @@ class Train():
             self.exp_name = self.agent_class + "/" + self.env_name
 
         # 日志路径
-        self.log_dir = "Log/" + self.exp_name
-        # self.log_dir = None
+        # self.log_dir = "Log/" + self.exp_name
+        self.log_dir = None
         # 模型加载路径
         # self.model_load_path = "Model/" + self.exp_name
         self.model_load_path = None
@@ -127,9 +127,9 @@ class Train():
         if np.random.uniform() <= self.epsilon:
             return np.random.choice([0, 1, 2])
         if self.target_action:
-            action = self.agent.target_action(np.array([state]))
+            action = self.agent.target_action(state)
         else:
-            action = self.agent.action(np.array([state]))
+            action = self.agent.action(state)
         if self.add_explore_noise:
             action = self.noise(action)
         return np.argmax(action)
@@ -212,28 +212,28 @@ class Train():
                               units_num=self.units_num, layers_num=self.layers_num, lr=self.lr,
                               batch_size=self.batch_size, buffer_size=self.buffer_size,
                               gamma=self.gamma, tau=self.tau, update_freq=self.update_freq,
-                              prioritized_replay=self.prioritized_replay
+                              prioritized_replay=self.prioritized_replay, activation="linear"
                               )
         elif self.agent_class == "DDQN":
             agent = DDQN_Agent(agent_index=index, state_shape=state_shape, action_shape=action_shape,
                               units_num=self.units_num, layers_num=self.layers_num, lr=self.lr,
                               batch_size=self.batch_size, buffer_size=self.buffer_size,
                               gamma=self.gamma, tau=self.tau, update_freq=self.update_freq,
-                              prioritized_replay=self.prioritized_replay
+                              prioritized_replay=self.prioritized_replay, activation="linear"
                               )
         elif self.agent_class == "Dueling_DQN":
             agent = Dueling_DQN_Agent(agent_index=index, state_shape=state_shape, action_shape=action_shape,
                               units_num=self.units_num, layers_num=self.layers_num, lr=self.lr,
                               batch_size=self.batch_size, buffer_size=self.buffer_size,
                               gamma=self.gamma, tau=self.tau, update_freq=self.update_freq,
-                              prioritized_replay=self.prioritized_replay
+                              prioritized_replay=self.prioritized_replay, activation="linear"
                               )
         elif self.agent_class == "D3QN":
             agent = D3QN_Agent(agent_index=index, state_shape=state_shape, action_shape=action_shape,
                               units_num=self.units_num, layers_num=self.layers_num, lr=self.lr,
                               batch_size=self.batch_size, buffer_size=self.buffer_size,
                               gamma=self.gamma, tau=self.tau, update_freq=self.update_freq,
-                              prioritized_replay=self.prioritized_replay
+                              prioritized_replay=self.prioritized_replay, activation="linear"
                               )
         elif self.agent_class == "DDPG":
             agent = DDPG_Agent(agent_index=index, state_shape=state_shape, action_shape=action_shape, critic_units_num=self.critic_units_num,

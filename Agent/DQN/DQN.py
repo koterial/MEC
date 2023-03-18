@@ -49,12 +49,12 @@ class DQN_Agent():
         else:
             self.replay_buffer = Replay_Buffer(buffer_size)
 
-    def action(self, state_batch):
-        action = self.train_q.get_action(state_batch)[0]
+    def action(self, state):
+        action = self.train_q.get_action(np.array([state]))[0]
         return action.numpy()
 
-    def target_action(self, state_batch):
-        action = self.target_q.get_action(state_batch)[0]
+    def target_action(self, state):
+        action = self.target_q.get_action(np.array([state]))[0]
         return action.numpy()
 
     def remember(self, state, action, next_state, reward, done):
@@ -90,15 +90,16 @@ class DQN_Agent():
 
         update_target_network(self.train_q.model, self.target_q.model)
 
-    def model_save(self, file_path):
+    def model_save(self, file_path, seed):
         if os.path.exists(file_path):
             pass
         else:
             os.makedirs(file_path)
-        self.target_q.model.save_weights(file_path + "/Agent{}_Q_model.h5".format(self.agent_index))
-        file = open(file_path + "/Agent{}_train.log".format(self.agent_index), "w")
+        self.target_q.model.save_weights(file_path + "/Agent_{}_Q_model.h5".format(self.agent_index))
+        file = open(file_path + "/Agent_{}_train.log".format(self.agent_index), "w")
         file.write(
-            "state_shape:" + str(self.state_shape) +
+            "seed:" + str(seed) +
+            "\nstate_shape:" + str(self.state_shape) +
             "\naction_shape:" + str(self.action_shape) +
             "\nunits_num:" + str(self.units_num) +
             "\nlayers_num:" + str(self.layers_num) +
@@ -120,11 +121,11 @@ class DQN_Agent():
 
     def model_load(self, file_path, agent_index=None):
         if agent_index == None:
-            self.train_q.model.load_weights(file_path + "/Agent{}_Q_model.h5".format(self.agent_index))
-            self.target_q.model.load_weights(file_path + "/Agent{}_Q_model.h5".format(self.agent_index))
+            self.train_q.model.load_weights(file_path + "/Agent_{}_Q_model.h5".format(self.agent_index))
+            self.target_q.model.load_weights(file_path + "/Agent_{}_Q_model.h5".format(self.agent_index))
         else:
-            self.train_q.model.load_weights(file_path + "/Agent{}_Q_model.h5".format(agent_index))
-            self.target_q.model.load_weights(file_path + "/Agent{}_Q_model.h5".format(agent_index))
+            self.train_q.model.load_weights(file_path + "/Agent_{}_Q_model.h5".format(agent_index))
+            self.target_q.model.load_weights(file_path + "/Agent_{}_Q_model.h5".format(agent_index))
 
     def buffer_save(self, file_path):
         if os.path.exists(file_path):
@@ -157,16 +158,16 @@ class DQN_Q():
     def model_create(self):
         # 创建输入端
         self.state_input_layer = keras.Input(shape=self.state_shape,
-                                             name="Agent{}_state_input".format(self.agent_index))
+                                             name="Agent_{}_state_input".format(self.agent_index))
         # 创建中间层
         self.hidden_layers = []
         for each in range(self.layers_num):
             layer = keras.layers.Dense(self.units_num, activation="relu",
-                                       name="Agent{}_hidden{}".format(self.agent_index, each))
+                                       name="Agent_{}_hidden_{}".format(self.agent_index, each))
             self.hidden_layers.append(layer)
         # 创建输出端
-        self.action_output_layer = keras.layers.Dense(self.action_shape, activation=self.activation,
-                                                      name="Agent{}_action_output".format(self.agent_index))
+        self.action_output_layer = keras.layers.Dense(sum(self.action_shape), activation=self.activation,
+                                                      name="Agent_{}_action_output".format(self.agent_index))
 
         x = self.hidden_layers[0](self.state_input_layer)
         for each in range(1, self.layers_num):

@@ -95,7 +95,7 @@ class DDPG_Agent():
             state_batch, action_batch, next_state_batch, reward_batch, done_batch = self.replay_buffer.sample(
                 self.batch_size)
             weight_batch = tf.ones(shape=(self.batch_size,), dtype=tf.float32)
-        next_action_batch = self.target_actor.get_action(next_state_batch)
+        next_action_batch = self.target_actor.get_action(next_state_batch).numpy()
         next_q_batch = self.target_critic.model([next_state_batch] + [next_action_batch])
         target_q_batch = reward_batch[:, None] + self.gamma * next_q_batch * (1 - done_batch[:, None].astype(int))
         td_error_batch = self.train_critic.train(state_batch, action_batch, target_q_batch, weight_batch)
