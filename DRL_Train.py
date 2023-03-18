@@ -26,7 +26,7 @@ class Train():
         # 智能体类型
         self.agent_class = "TD3"
         # 优先经验回放
-        self.prioritized_replay = False
+        self.prioritized_replay = True
         # 环境名称
         self.env_name = "MEC_RA"
         # 实验名称

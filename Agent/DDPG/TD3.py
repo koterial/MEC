@@ -101,7 +101,7 @@ class TD3_Agent(DDPG_Agent):
             state_batch, action_batch, next_state_batch, reward_batch, done_batch = self.replay_buffer.sample(
                 self.batch_size)
             weight_batch = tf.ones(shape=[self.batch_size, ], dtype=tf.float32)
-        next_action_batch = self.target_actor.get_action(next_state_batch)
+        next_action_batch = self.target_actor.get_action(next_state_batch).numpy()
         noise = np.random.normal(loc=0.0, scale=self.eval_noise_scale, size=next_action_batch.shape)
         noise = np.clip(noise, -self.eval_noise_bound, self.eval_noise_bound)
         next_action_batch = noise + next_action_batch
