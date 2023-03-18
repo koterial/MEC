@@ -34,6 +34,7 @@ class MEC():
         self.system_device_num = sum(self.system_device_num_list)
 
         # 定义归一化量
+        self.max_task_level = max([device_info["max_task_level"] for device_info in self.system_device_info_list])
         self.max_task_run_time = max([device_info["max_task_run_time"] for device_info in self.system_device_info_list])
         self.max_task_upload_data = max([device_info["max_task_upload_data"] for device_info in self.system_device_info_list])
         self.max_task_store_data = max([device_info["max_task_store_data"] for device_info in self.system_device_info_list])
@@ -77,7 +78,8 @@ class MEC():
                     task_generation_num = np.random.randint(low=1, high=device_info["max_task_generation_num"] + 1, size=1)[0]
                 max_task_load_num = np.random.randint(low=device_info["max_task_load_num"], high=device_info["max_task_load_num"] + 1, size=1)[0]
                 max_connect_num = device_info["max_connect_num_list"]
-                init = {'index': each1, 'type': device_info["type"],
+                device_level = np.random.choice(range(1, device_info["max_device_level"]))
+                init = {'index': each1, 'type': device_info["type"], 'level': device_level,
                         'xpos': xpos, 'ypos': ypos, 'zpos': zpos,
                         'velocity': velocity, 'solid_angle_1': solid_angle_1, 'solid_angle_2': solid_angle_2,
                         'transmission_power': transmission_power, 'compute_power': compute_power, 'standby_power': standby_power,
@@ -93,7 +95,10 @@ class MEC():
                         download_data = max(math.floor(np.random.uniform(low=0, high=1, size=1)[0] * device_info["max_task_download_data"]), 1)
                         max_run_time = max(math.floor(np.random.uniform(low=0, high=1, size=1)[0] * device_info["max_task_run_time"]), 1)
                         start_time = 1
-                        init = {'index': each2, 'local_device': device, 'start_time': start_time,
+                        # task_level = np.random.choice(range(1, device_info["max_task_level"]))
+                        task_level = np.random.uniform(low=1, high=device_info["max_task_level"], size=1)[0]
+                        init = {'index': each2, 'level': task_level,
+                                'local_device': device, 'start_time': start_time,
                                 'max_run_time': max_run_time,
                                 'upload_data': upload_data, 'store_data': store_data,
                                 'compute_data': compute_data, 'download_data': download_data}
@@ -150,13 +155,13 @@ class MEC():
                 run_state = device.task_run(self.now_time, self.tau, task, action[0][task.vm_index], action[1][task.vm_index], action[2][task.vm_index])
                 time_reward = (2 - (task.start_time + task.max_run_time - self.now_time) / (self.max_task_run_time))
                 data_reward = (task.upload_data / self.max_task_upload_data + task.compute_data / self.max_task_compute_data + task.download_data / self.max_task_download_data)
-                reward -= 1 * energy_reward + 1 * time_reward * data_reward
+                reward -= 1 * energy_reward + 1 * time_reward * data_reward * task.level
                 if run_state == 1:
-                    reward += 10
+                    reward += 10 * task.level
                     device.task_finish_num += 1
                     self.finish_num += 1
                 elif run_state == -1:
-                    reward -= 10
+                    reward -= 10 * task.level
                     device.task_fail_num += 1
                     self.fail_num += 1
                 reward_list[device.index - 1] = reward
@@ -197,17 +202,19 @@ class MEC():
                 if task == 0:
                     continue
                 else:
+                    # 等级状态
+                    state[task.vm_index][1] = task.level / self.max_task_level
                     # 时间状态
-                    state[task.vm_index][0] = (task.start_time + task.max_run_time - self.now_time) / (self.max_task_run_time)
+                    state[task.vm_index][1] = (task.start_time + task.max_run_time - self.now_time) / (self.max_task_run_time)
                     # 数据状态
-                    state[task.vm_index][1] = task.upload_data / self.max_task_upload_data
-                    state[task.vm_index][2] = task.compute_data / self.max_task_compute_data
-                    state[task.vm_index][3] = task.download_data / self.max_task_download_data
+                    state[task.vm_index][2] = task.upload_data / self.max_task_upload_data
+                    state[task.vm_index][3] = task.compute_data / self.max_task_compute_data
+                    state[task.vm_index][4] = task.download_data / self.max_task_download_data
                     # 上行链路接收功率状态
-                    state[task.vm_index][4] = dbm_to_mw(device.access_list[task.local_device.type][task.local_device.index][3]) / self.max_receive_power
+                    state[task.vm_index][5] = dbm_to_mw(device.access_list[task.local_device.type][task.local_device.index][3]) / self.max_receive_power
                     # 下行链路接收功率状态
-                    state[task.vm_index][5] = dbm_to_mw(task.local_device.connect_list[device.type][device.index][3]) / self.max_receive_power
-            if np.max(state[:, 0:4]) > 1 or np.min(state[:, 0:4]) < 0:
+                    state[task.vm_index][6] = dbm_to_mw(task.local_device.connect_list[device.type][device.index][3]) / self.max_receive_power
+            if np.max(state[:, 1:5]) > 1 or np.min(state[:, 1:5]) < 0:
                 print(state)
             state_list.append(state.flatten())
         return state_list

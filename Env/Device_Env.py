@@ -10,6 +10,9 @@ class Base_Device():
         self.index = kwargs['index']
         self.type = kwargs['type']
 
+        # 定义任务等级
+        self.level = kwargs['level']
+
         # 定义三维位置(m)、速度(m/s)、三维角度
         self.xpos = kwargs['xpos']
         self.ypos = kwargs['ypos']

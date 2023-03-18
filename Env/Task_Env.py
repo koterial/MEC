@@ -12,6 +12,9 @@ class Base_Task():
         self.execution_device = None
         self.vm_index = -1
 
+        # 定义任务等级
+        self.level = kwargs['level']
+
         # 定义起始、最大运行、结束时间
         self.start_time = kwargs['start_time']
         self.max_run_time = kwargs['max_run_time']
