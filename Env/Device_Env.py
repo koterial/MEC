@@ -48,12 +48,13 @@ class Base_Device():
             self.near_list.append({})
 
         # 定义任务运行、等待队列
-        self.max_task_load_num = kwargs['max_task_load_num']
+        self.max_task_wait_num = kwargs['max_task_wait_num']
+        self.max_task_run_num = kwargs['max_task_run_num']
         self.task_generation_num = kwargs['task_generation_num']
         # 任务等待队列: 由本设备产生、待卸载的任务队列
         self.task_wait_list = []
         # 任务运行队列: 本设备承载的运行中的任务
-        self.task_run_list = np.zeros(shape=self.max_task_load_num, dtype=np.int8).tolist()
+        self.task_run_list = np.zeros(shape=self.max_task_run_num, dtype=np.int8).tolist()
 
         # 定义设备能量开销列表(总、传输、计算、待机)
         self.device_energy_cost = np.zeros(shape=(4,))
@@ -67,12 +68,13 @@ class Base_Device():
             self.task_service_delay = None
 
         # 定义任务完成、失败任务列表
-        self.task_offload_num = 0
+        self.task_offrun_num = 0
         self.task_finish_num = 0
         self.task_fail_num = 0
 
         # 定义资源分配状态空间
-        self.ra_state_space = (self.max_task_load_num, 6)
+        self.co_state_space = (self.max_task_wait_num, 5)
+        self.ra_state_space = (self.max_task_run_num, 7)
 
     # 重置设备
     def reset(self):
@@ -87,7 +89,7 @@ class Base_Device():
             self.near_list.append({})
         # 重置任务等待、运行队列
         self.task_wait_list = []
-        self.task_run_list = np.zeros(shape=self.max_task_load_num, dtype=np.int8).tolist()
+        self.task_run_list = np.zeros(shape=self.max_task_run_num, dtype=np.int8).tolist()
         # 重置设备能量开销列表(总、传输、计算、 待机)
         self.device_energy_cost = np.zeros(shape=(4,))
         # 重置任务能量开销列表(总、传输、计算、待机)、任务服务时延列表(总、等待、上传、计算、下载)
@@ -98,7 +100,7 @@ class Base_Device():
             self.task_energy_cost = None
             self.task_service_delay = None
         # 定义任务完成、失败任务列表
-        self.task_offload_num = 0
+        self.task_offrun_num = 0
         self.task_finish_num = 0
         self.task_fail_num = 0
 
@@ -107,7 +109,7 @@ class Base_Device():
     def near(self, base_device_type, base_device_list: dict):
         # 如果设备类型与本设备不一致
         if base_device_type != self.type:
-            for base_device in base_device_list.values():
+            for _, base_device in base_device_list.items():
                 distance = get_distance(self.xpos, self.ypos, self.zpos, base_device.xpos, base_device.ypos,
                                         base_device.zpos)
                 if distance > self.coverage:
@@ -119,7 +121,7 @@ class Base_Device():
             new_base_device_list = base_device_list.copy()
             # 排除自身
             del new_base_device_list[self.index]
-            for base_device in new_base_device_list.values():
+            for _, base_device in new_base_device_list.items():
                 distance = get_distance(self.xpos, self.ypos, self.zpos, base_device.xpos, base_device.ypos,
                                         base_device.zpos)
                 if distance > self.coverage:
@@ -207,7 +209,7 @@ class Base_Device():
         self.task_wait_list.remove(task)
         result = task.offload_finish(now_time, base_device, free_index[0])
         if result:
-            base_device.task_offload_num += 1
+            base_device.task_offrun_num += 1
         return result
 
     # 任务运行

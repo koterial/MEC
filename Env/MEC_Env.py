@@ -76,7 +76,8 @@ class MEC():
                     task_generation_num = 0
                 else:
                     task_generation_num = np.random.randint(low=1, high=device_info["max_task_generation_num"] + 1, size=1)[0]
-                max_task_load_num = np.random.randint(low=device_info["max_task_load_num"], high=device_info["max_task_load_num"] + 1, size=1)[0]
+                max_task_wait_num = np.random.randint(low=device_info["max_task_wait_num"], high=device_info["max_task_wait_num"] + 1, size=1)[0]
+                max_task_run_num = np.random.randint(low=device_info["max_task_run_num"], high=device_info["max_task_run_num"] + 1, size=1)[0]
                 max_connect_num = device_info["max_connect_num_list"]
                 device_level = np.random.choice(range(1, device_info["max_device_level"]))
                 init = {'index': each1, 'type': device_info["type"], 'level': device_level,
@@ -84,7 +85,7 @@ class MEC():
                         'velocity': velocity, 'solid_angle_1': solid_angle_1, 'solid_angle_2': solid_angle_2,
                         'transmission_power': transmission_power, 'compute_power': compute_power, 'standby_power': standby_power,
                         'upload_resources': upload_resources, 'store_resources': store_resources, 'compute_resources': compute_resources, 'download_resources': download_resources,
-                        'coverage': coverage, 'max_task_load_num': max_task_load_num, 'task_generation_num': task_generation_num}
+                        'coverage': coverage, 'max_task_wait_num': max_task_wait_num, 'max_task_run_num': max_task_run_num, 'task_generation_num': task_generation_num}
                 device = Base_Device(*max_connect_num, **init)
                 if task_generation_num >= 1:
                     # 初始化任务
@@ -106,34 +107,45 @@ class MEC():
                         device.task_wait_list.append(task)
                 self.system_device_list[device_info["type"]][each1] = device
 
-        # 将所有设备连接到1号基站
+        # 将所有设备连接到基站
         for device_list in self.system_device_list[1:]:
-            for device in device_list.values():
+            for _, device in device_list.items():
                 device.connect(self.system_device_list[0][1])
-                for task in device.task_wait_list:
-                    device.task_offload(self.now_time, task, self.system_device_list[0][1])
+                device.connect(self.system_device_list[0][2])
+                device.connect(self.system_device_list[0][3])
         return self.get_co_state(), self.get_ra_state()
+
 
     # 系统运行
     # 输入:任务卸载策略, 资源分配策略
     def system_step(self, co_action_list, ra_action_list):
         # 每个时隙内先进行任务卸载, 再进行资源分配
-        # co_reward_list = self.co_step(co_action_list)
+        co_reward_list = self.co_step(co_action_list)
         ra_reward_list = self.ra_step(ra_action_list)
         # 下一时隙
         self.now_time += 1
-        # time.sleep(0.1)
+        # 判断任务是否完成
         done = self.now_time == self.end_time + 1 or self.finish_num + self.fail_num == 5
         co_state_list = self.get_co_state()
         ra_state_list = self.get_ra_state()
-        return co_state_list, None, ra_state_list, ra_reward_list, done
+        return co_state_list, co_reward_list, ra_state_list, ra_reward_list, done
 
-    # 设备运行
+    # 运行计算卸载
     # 输入: 任务卸载策略
     def co_step(self, action_list):
-        pass
+        action_list = self.co_action_deal(action_list)
+        reward_list = np.zeros((sum(self.system_device_num_list[1:]))).tolist()
+        for device_list in self.system_device_list:
+            for _, device in device_list.items():
+                reward = 0
+                # action = action_list[device.type-1][device.index-1]
+                action = [1]
+                for each, task in enumerate(device.task_wait_list):
+                    act = action[each]
+                    device.task_offload(self.now_time, task, self.system_device_list[0][act])
+        return reward_list
 
-    # 任务运行
+    # 运行资源分配
     # 输入: 资源分配策略
     def ra_step(self, action_list):
         action_list = self.ra_action_deal(action_list)
@@ -167,6 +179,11 @@ class MEC():
                 reward_list[device.index - 1] = reward
         return reward_list
 
+
+    # 对计算卸载策略进行处理
+    def co_action_deal(self, action_list):
+        pass
+
     # 对资源分配策略进行处理
     def ra_action_deal(self, action_list):
         def norm(act):
@@ -190,8 +207,27 @@ class MEC():
             new_action_list.append(action)
         return new_action_list
 
+    # 获取计算卸载智能体状态
     def get_co_state(self):
-        pass
+        state_list = []
+        for device_list in self.system_device_list[1:]:
+            for _, device in device_list.items():
+                state = np.zeros(shape=device.co_state_space)
+                for task in device.task_wait_list:
+                    state[task.index-1][0] = task.level / self.max_task_level
+                    state[task.index-1][1] = (task.start_time + task.max_run_time - self.now_time) / (self.max_task_run_time)
+                    state[task.index-1][2] = task.upload_data / self.max_task_upload_data
+                    state[task.index-1][3] = task.compute_data / self.max_task_compute_data
+                    state[task.index-1][4] = task.download_data / self.max_task_download_data
+                state = state.flatten().tolist()
+                for connect in device.connect_list[:device.type]:
+                    state.append(connect[2])
+                    state.append(connect[3])
+                for connect in device.connect_list[device.type+1:]:
+                    state.append(connect[2])
+                    state.append(connect[3])
+                state_list.append(state)
+        return state_list
 
     # 获取资源分配智能体状态
     def get_ra_state(self):
@@ -230,13 +266,14 @@ if __name__ == "__main__":
         _, ra_state_list = mec.reset()
         total_ra_reward_list = np.zeros((mec.system_device_num_list[0],)).tolist()
         while True:
-            ra_action_list = [np.random.uniform(size=(18,)) for _, device in mec.system_device_list[0].items()]
+            co_action_list = None
+            ra_action_list = [np.ones(shape=(18,)) for _, device in mec.system_device_list[0].items()]
             for action in ra_action_list:
                 action = np.reshape(action, (3, -1))
                 action[0] = tf.nn.softmax(action[0]).numpy()
                 action[1] = tf.nn.softmax(action[1]).numpy()
                 action[2] = tf.nn.softmax(action[2]).numpy()
-            _, _, next_ra_state_list, ra_reward_list, done = mec.system_step(None, ra_action_list)
+            next_co_state_list, co_reward_list, next_ra_state_list, ra_reward_list, done = mec.system_step(co_action_list, ra_action_list)
             total_ra_reward_list += ra_reward_list
             if done:
                 offload_num = 0

@@ -6,7 +6,7 @@
     "screen_height": 350,
     "tau": 0.01,
     "max_run_time": 100,
-    "device_num_list": [1, 5]
+    "device_num_list": [3, 10]
   },
   "device_info_list": [
     {
@@ -16,7 +16,8 @@
       "max_device_level": 4,
       "max_task_level": 4,
       "max_task_generation_num": 0,
-      "max_task_load_num": 5,
+      "max_task_run_num": 5,
+      "max_task_wait_num": 0,
       "max_task_run_time": 50,
       "max_task_upload_data": 0,
       "max_task_store_data": 0,
@@ -31,7 +32,7 @@
       "max_download_resources": 5000000.0,
       "max_velocity": 0,
       "max_coverage": 1500,
-      "max_connect_num_list": [0, 5],
+      "max_connect_num_list": [0, 10],
       "max_received_power_list": [0, 0]
     },
     {
@@ -41,7 +42,8 @@
       "max_device_level": 4,
       "max_task_level": 4,
       "max_task_generation_num": 1,
-      "max_task_load_num": 0,
+      "max_task_run_num": 0,
+      "max_task_wait_num": 3,
       "max_task_run_time": 50,
       "max_task_upload_data": 3000000.0,
       "max_task_store_data": 0,
@@ -56,7 +58,7 @@
       "max_download_resources": 0,
       "max_velocity": 0,
       "max_coverage": 1500,
-      "max_connect_num_list": [1, 0],
+      "max_connect_num_list": [3, 0],
       "max_received_power_list": [0, 0]
     }
   ]
